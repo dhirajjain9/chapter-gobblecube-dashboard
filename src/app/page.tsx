@@ -26,6 +26,7 @@ export default function Dashboard() {
   const [valueKeys, setValueKeys] = useState<string[]>([]);
   const [chartType, setChartType] = useState<"bar" | "line">("bar");
   const [filters, setFilters] = useState<GcFilters | null>(null);
+  const [rawData, setRawData] = useState<unknown>(null);
 
   /* eslint-disable react-hooks/set-state-in-effect --
      localStorage is client-only, and these effects intentionally reset
@@ -55,6 +56,7 @@ export default function Dashboard() {
     setLoading(true);
     setStatus("Fetching…");
     setDatasets([]);
+    setRawData(null);
     try {
       // Rebuild the request body with the current filter selections.
       const request =
@@ -66,11 +68,12 @@ export default function Dashboard() {
         setStatus(`⚠️ ${res.error ?? `HTTP ${res.status}`} — your token may have expired. Re-capture it on the Connect page.`);
         return;
       }
+      setRawData(res.data);
       const found = findDatasets(res.data);
       setDatasets(found);
       setDsIndex(0);
       if (found.length === 0) {
-        setStatus("Connected, but no table-like data was found in the response. Send me the raw JSON and I'll map it.");
+        setStatus("Connected ✓ — data received, but it's not in a simple table shape. See the raw response below and copy it to map the charts.");
       } else {
         setStatus(`Found ${found.length} dataset(s). Showing the largest.`);
       }
@@ -321,6 +324,28 @@ export default function Dashboard() {
             </table>
           </div>
         </>
+      )}
+
+      {rawData != null && (
+        <details open={!dataset} className="rounded-xl border border-zinc-200 bg-white dark:border-zinc-800 dark:bg-zinc-900">
+          <summary className="cursor-pointer select-none px-4 py-3 text-sm font-medium">
+            Raw response from GobbleCube {dataset ? "(for reference)" : "(copy this so the charts can be mapped)"}
+          </summary>
+          <div className="border-t border-zinc-200 p-4 dark:border-zinc-800">
+            <button
+              onClick={async () => {
+                await navigator.clipboard.writeText(JSON.stringify(rawData, null, 2));
+                setStatus("Raw JSON copied to clipboard.");
+              }}
+              className="mb-3 rounded-lg border border-zinc-300 px-3 py-1.5 text-xs font-medium dark:border-zinc-700"
+            >
+              📋 Copy raw JSON
+            </button>
+            <pre className="max-h-96 overflow-auto rounded-lg bg-zinc-50 p-3 text-xs dark:bg-zinc-800">
+              {JSON.stringify(rawData, null, 2)}
+            </pre>
+          </div>
+        </details>
       )}
     </div>
   );

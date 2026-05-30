@@ -21,7 +21,20 @@ function isRecordArray(v: unknown): v is Row[] {
   );
 }
 
-// Walk the JSON tree and collect every array-of-objects, ranked by size.
+// An object whose values are all objects (a "map" keyed by id/metric),
+// e.g. { "qcom-pid-offtake": {...}, "qcom-pid-est-cat-size": {...} }.
+// We convert it to rows with the key surfaced as a `_key` column.
+function isRecordMap(v: unknown): v is Record<string, Row> {
+  if (!v || typeof v !== "object" || Array.isArray(v)) return false;
+  const vals = Object.values(v as Row);
+  return (
+    vals.length > 1 &&
+    vals.every((x) => x !== null && typeof x === "object" && !Array.isArray(x))
+  );
+}
+
+// Walk the JSON tree and collect every array-of-objects (and keyed maps of
+// objects), ranked by size.
 export function findDatasets(json: unknown): Dataset[] {
   const found: { path: string; rows: Row[] }[] = [];
 
@@ -29,6 +42,9 @@ export function findDatasets(json: unknown): Dataset[] {
     if (isRecordArray(node)) {
       found.push({ path: path || "(root)", rows: node });
       // still descend in case rows contain nested tables
+    } else if (isRecordMap(node)) {
+      const rows = Object.entries(node).map(([k, v]) => ({ _key: k, ...v }));
+      found.push({ path: path || "(root)", rows });
     }
     if (node && typeof node === "object") {
       for (const [k, v] of Object.entries(node as Row)) {
