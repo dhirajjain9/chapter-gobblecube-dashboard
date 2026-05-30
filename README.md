@@ -43,6 +43,23 @@ The captured request includes a login/session token that GobbleCube rotates
 periodically. When the dashboard shows a `401/403`, just re-capture the cURL
 (step 5) and save it again.
 
+## Deploy (open it from your phone)
+
+This is a standard Next.js app, so hosting on **Vercel** takes ~2 minutes and
+then auto-deploys on every push:
+
+1. Go to [vercel.com/new](https://vercel.com/new) and sign in with GitHub.
+2. **Import** the `chapter-gobblecube-dashboard` repo.
+3. For "Production Branch" you can use `main`, or deploy this feature branch
+   (`claude/beautiful-lamport-DYvvT`) as a preview — Vercel auto-detects Next.js,
+   no settings needed. Click **Deploy**.
+4. Open the resulting `https://<your-app>.vercel.app` URL on your phone, go to
+   **Connect**, and paste your captured cURL.
+
+> The GobbleCube call runs **server-side** from Vercel's function (not your
+> phone's browser), so CORS is not an issue and there is no host firewall like
+> the local dev sandbox. Your token still lives only in your browser.
+
 ## Tech
 
 Next.js 16 (App Router) · React 19 · TypeScript · Tailwind CSS · Recharts.
