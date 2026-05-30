@@ -3,6 +3,8 @@
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { DataChart } from "@/components/DataChart";
+import { QcomMetrics } from "@/components/QcomMetrics";
+import { parseQcomMetrics } from "@/lib/qcom";
 import { findDatasets, type Dataset } from "@/lib/flatten";
 import { downloadCSV, toCSV, toTSV } from "@/lib/csv";
 import { loadSources, runSource, type DataSource } from "@/lib/store";
@@ -69,11 +71,14 @@ export default function Dashboard() {
         return;
       }
       setRawData(res.data);
+      const qcomData = parseQcomMetrics(res.data);
       const found = findDatasets(res.data);
       setDatasets(found);
       setDsIndex(0);
-      if (found.length === 0) {
-        setStatus("Connected ✓ — data received, but it's not in a simple table shape. See the raw response below and copy it to map the charts.");
+      if (qcomData) {
+        setStatus(`Loaded ${qcomData.metrics.length} metrics ✓`);
+      } else if (found.length === 0) {
+        setStatus("Connected ✓ — data received, but it's not in a recognized shape. See the raw response below.");
       } else {
         setStatus(`Found ${found.length} dataset(s). Showing the largest.`);
       }
@@ -95,6 +100,9 @@ export default function Dashboard() {
     setValueKeys((cur) => (cur.includes(k) ? cur.filter((x) => x !== k) : [...cur, k]));
 
   const tableColumns = useMemo(() => dataset?.columns ?? [], [dataset]);
+
+  // Purpose-built view for GobbleCube qcom metric-data responses.
+  const qcom = useMemo(() => parseQcomMetrics(rawData), [rawData]);
 
   if (sources.length === 0) {
     return (
@@ -216,7 +224,9 @@ export default function Dashboard() {
         </div>
       )}
 
-      {datasets.length > 1 && (
+      {qcom && <QcomMetrics data={qcom} />}
+
+      {!qcom && datasets.length > 1 && (
         <div>
           <label className="block text-xs font-medium text-zinc-500">Dataset</label>
           <select
@@ -231,7 +241,7 @@ export default function Dashboard() {
         </div>
       )}
 
-      {dataset && (
+      {!qcom && dataset && (
         <>
           <div className="rounded-xl border border-zinc-200 bg-white p-5 dark:border-zinc-800 dark:bg-zinc-900">
             <div className="mb-4 flex flex-wrap items-end gap-4">

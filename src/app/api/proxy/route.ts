@@ -64,20 +64,6 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    // Temporary diagnostic logging (visible in Vercel runtime logs) so we
-    // can map the response shape. Logs structure + a truncated sample only.
-    try {
-      const summary =
-        payload && typeof payload === "object"
-          ? `keys=${JSON.stringify(Object.keys(payload as Record<string, unknown>))}`
-          : `type=${typeof payload}`;
-      const sample = JSON.stringify(payload).slice(0, 1800);
-      console.log(`[proxy] upstream=${upstream.status} ${summary}`);
-      console.log(`[proxy] sample=${sample}`);
-    } catch {
-      // ignore logging errors
-    }
-
     return NextResponse.json(
       {
         ok: upstream.ok,
