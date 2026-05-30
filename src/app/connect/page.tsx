@@ -33,6 +33,7 @@ export default function ConnectPage() {
   const [sources, setSources] = useState<DataSource[]>([]);
   const [tokenEdits, setTokenEdits] = useState<Record<string, string>>({});
 
+  // eslint-disable-next-line react-hooks/set-state-in-effect -- client-only localStorage load on mount
   useEffect(() => setSources(loadSources()), []);
 
   const onUpdateToken = (id: string) => {
