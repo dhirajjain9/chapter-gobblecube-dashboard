@@ -5,6 +5,7 @@ import { DataChart } from "@/components/DataChart";
 import { findDatasets, type Dataset } from "@/lib/flatten";
 import { downloadCSV, toCSV, toTSV } from "@/lib/csv";
 import { loadSources, runSource, type DataSource } from "@/lib/store";
+import { expiryStatus } from "@/lib/jwt";
 
 export default function Dashboard() {
   const [sources, setSources] = useState<DataSource[]>([]);
@@ -81,8 +82,16 @@ export default function Dashboard() {
     );
   }
 
+  const exp = active ? expiryStatus(active.request.headers) : null;
+
   return (
     <div className="space-y-6">
+      {exp?.expired && (
+        <div className="rounded-lg border border-red-300 bg-red-50 px-4 py-3 text-sm text-red-700 dark:border-red-800 dark:bg-red-950 dark:text-red-300">
+          ⚠️ {exp.label}. Paste a fresh token on the{" "}
+          <a href="/connect" className="underline">Connect</a> page.
+        </div>
+      )}
       <div className="flex flex-wrap items-end gap-3">
         <div>
           <label className="block text-xs font-medium text-zinc-500">Data source</label>

@@ -33,6 +33,21 @@ export function removeSource(id: string) {
   saveSources(loadSources().filter((s) => s.id !== id));
 }
 
+// Replace just the bearer token on a saved source (token rotates ~weekly,
+// so this saves re-pasting the whole cURL). Updates the `authorization`
+// header in place, case-insensitively.
+export function updateSourceToken(id: string, newToken: string) {
+  const token = newToken.replace(/^Bearer\s+/i, "").trim();
+  const sources = loadSources().map((s) => {
+    if (s.id !== id) return s;
+    const headers = { ...s.request.headers };
+    const key = Object.keys(headers).find((k) => k.toLowerCase() === "authorization") ?? "authorization";
+    headers[key] = `Bearer ${token}`;
+    return { ...s, request: { ...s.request, headers } };
+  });
+  saveSources(sources);
+}
+
 export interface ProxyResult {
   ok: boolean;
   status: number;

@@ -7,8 +7,10 @@ import {
   loadSources,
   removeSource,
   runSource,
+  updateSourceToken,
   type DataSource,
 } from "@/lib/store";
+import { expiryStatus } from "@/lib/jwt";
 
 function redact(headers: Record<string, string>): Record<string, string> {
   const out: Record<string, string> = {};
@@ -29,8 +31,17 @@ export default function ConnectPage() {
   const [error, setError] = useState("");
   const [testMsg, setTestMsg] = useState("");
   const [sources, setSources] = useState<DataSource[]>([]);
+  const [tokenEdits, setTokenEdits] = useState<Record<string, string>>({});
 
   useEffect(() => setSources(loadSources()), []);
+
+  const onUpdateToken = (id: string) => {
+    const t = tokenEdits[id]?.trim();
+    if (!t) return;
+    updateSourceToken(id, t);
+    setSources(loadSources());
+    setTokenEdits((e) => ({ ...e, [id]: "" }));
+  };
 
   const onParse = () => {
     setError("");
@@ -152,23 +163,48 @@ export default function ConnectPage() {
           <p className="mt-2 text-sm text-zinc-500">None yet.</p>
         ) : (
           <ul className="mt-3 space-y-2">
-            {sources.map((s) => (
-              <li
-                key={s.id}
-                className="flex items-center justify-between rounded-lg border border-zinc-200 bg-white px-4 py-3 text-sm dark:border-zinc-800 dark:bg-zinc-900"
-              >
-                <div>
-                  <div className="font-medium">{s.name}</div>
-                  <div className="text-xs text-zinc-500">{s.request.url}</div>
-                </div>
-                <button
-                  onClick={() => onRemove(s.id)}
-                  className="text-xs text-red-600 hover:underline"
+            {sources.map((s) => {
+              const exp = expiryStatus(s.request.headers);
+              return (
+                <li
+                  key={s.id}
+                  className="rounded-lg border border-zinc-200 bg-white px-4 py-3 text-sm dark:border-zinc-800 dark:bg-zinc-900"
                 >
-                  Remove
-                </button>
-              </li>
-            ))}
+                  <div className="flex items-start justify-between gap-3">
+                    <div>
+                      <div className="font-medium">{s.name}</div>
+                      <div className="break-all text-xs text-zinc-500">{s.request.url}</div>
+                      {exp && (
+                        <div className={`mt-1 text-xs ${exp.expired ? "text-red-600" : "text-emerald-600"}`}>
+                          {exp.expired ? "⚠️ " : "✓ "}{exp.label}
+                        </div>
+                      )}
+                    </div>
+                    <button
+                      onClick={() => onRemove(s.id)}
+                      className="shrink-0 text-xs text-red-600 hover:underline"
+                    >
+                      Remove
+                    </button>
+                  </div>
+                  <div className="mt-3 flex flex-wrap items-center gap-2">
+                    <input
+                      value={tokenEdits[s.id] ?? ""}
+                      onChange={(e) => setTokenEdits((prev) => ({ ...prev, [s.id]: e.target.value }))}
+                      placeholder="Paste a fresh Bearer token to refresh auth…"
+                      className="flex-1 rounded-lg border border-zinc-300 bg-transparent px-3 py-1.5 font-mono text-xs dark:border-zinc-700"
+                    />
+                    <button
+                      onClick={() => onUpdateToken(s.id)}
+                      disabled={!tokenEdits[s.id]?.trim()}
+                      className="rounded-lg border border-zinc-300 px-3 py-1.5 text-xs font-medium disabled:opacity-40 dark:border-zinc-700"
+                    >
+                      Update token
+                    </button>
+                  </div>
+                </li>
+              );
+            })}
           </ul>
         )}
       </section>
